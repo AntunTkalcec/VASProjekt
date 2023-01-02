@@ -4,11 +4,10 @@ from spade.template import Template
 from spade import quit_spade
 
 from time import sleep
-from centrala import Centrala
 import initializer
 
 if __name__ == '__main__':  
-    centrala = Centrala(f"centrala@localhost", f"centrala")
+    centrala = initializer.Centrala(f"centrala@localhost", f"centrala")
     centrala.start()
     initializer.initTaxi()
     initializer.initPutnici()
@@ -16,9 +15,9 @@ if __name__ == '__main__':
         try:
             sleep(1)
         except KeyboardInterrupt:
-            for t in Centrala.taxiji:
+            for t in initializer.Centrala.taxiji:
                 t.stop()
-            for p in Centrala.putnici:
+            for p in initializer.Centrala.putnici:
                 p.stop()
             centrala.stop()
             break
