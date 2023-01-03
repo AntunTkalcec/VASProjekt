@@ -17,22 +17,22 @@ def initTaxi():
     taxiji = []
     for i in range(1, 4):
         taxi = Taxi(f"taxi{i}@localhost", f"taxi{i}")
-        taxi.oznaka = f"Taxi-{i}"
-        taxi.x = random.randrange(1, 30)
-        taxi.y = random.randrange(1, 30)
-        taxi.slobodan = True
+        taxi.oznaka = f"taxi{i}@localhost"
+        taxi.x = random.randrange(1, 60)
+        taxi.y = random.randrange(1, 60)
+        taxi.redCekanja = []
         taxiji.insert(i, taxi)
         taxi.start()
     
     Centrala.taxiji = taxiji
     
 def initPutnici():
-    num = random.randrange(1, 30)
+    num = random.randrange(1, 15)
     print(num)
     putnici = []
-    for i in range(1, 2):
+    for i in range(1, num+1):
         putnik = Putnik(f"putnik{i}@localhost", f"putnik{i}")
-        putnik.oznaka = f"Putnik{i}"
+        putnik.oznaka = f"putnik{i}@localhost"
         putnik.x = random.randrange(1, 30)
         putnik.y = random.randrange(1, 30)
         putnik.x2 = random.randrange(1, 30)
@@ -40,6 +40,11 @@ def initPutnici():
         putnik.vrijeme = random.randrange(600, 3600)
         putnik.zatrazioTaxi = False
         putnik.nasaoTaxi = False
+        putnik.odabranTaxi = {}
+        putnik.nudimCijenu = False
+        putnik.cijena = 0
+        putnik.prihvacenaPonuda = False
+        putnik.udaljenosti = []
         putnici.insert(i, putnik)
         putnik.start()
     
