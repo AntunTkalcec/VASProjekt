@@ -48,6 +48,7 @@ class Putnik(Agent):
             self.agent.udaljenosti = udaljenosti            
             self.agent.nudimCijenu = True
             print(f"{self.agent.oznaka} salje zahtjev za prijevoz najblizem taxiju {self.agent.odabranTaxi['oznaka']}.")
+
             return
                 
     class PonudiTaxiju(PeriodicBehaviour):
@@ -80,6 +81,14 @@ class Putnik(Agent):
                         self.agent.x = self.agent.x2
                         self.agent.y = self.agent.y2
                         print(f"{self.agent.oznaka} je stigao na svoje odrediste!")
+                        msg = Message(
+                            to="centrala@localhost",
+                            body=f"{self.agent.oznaka}",
+                            metadata={
+                                "intent":"putnikRemove"
+                            }
+                        )
+                        await self.send(msg)
                         await self.agent.stop()
                 
     
