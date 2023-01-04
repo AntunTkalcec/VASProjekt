@@ -11,6 +11,7 @@ from time import sleep
 import json
 import initializer
 import datetime
+from ast import literal_eval
 
 class Taxi(Agent):
     class PrimajPonude(CyclicBehaviour):
@@ -20,22 +21,27 @@ class Taxi(Agent):
             if msg:
                 naredba = msg.get_metadata("intent")
                 if naredba == "ponuda":
-                    body = dict(msg.body)
+                    body = json.loads(msg.body)
                     cijena = body['cijena']
                     odredisteX = body['odredisteX']
                     odredisteY = body['odredisteY']
                     posiljatelj = msg.sender[0] + "@" + msg.sender[1]
-                    redCekanja = self.agent.redCekanja
-                    if posiljatelj not in redCekanja:
-                        self.agent.redCekanja.append(f"{{'putnik':{msg.sender}, 'cijena':{cijena}, 'odredisteX':{odredisteX}, 'odredisteY':{odredisteY}}}")
-                        msgCentrali = Message(
-                            to="centrala@localhost",
-                            body=json.dumps(self.agent, default=initializer.Taxi.encoder_taxi, indent=4),
-                            metadata={
-                                "intent":"taxijiUpdate"
-                            }
-                        )
-                        await self.send(msgCentrali)                                                                                   
+                    redCekanja = json.loads(json.dumps(self.agent.redCekanja))
+                    if len(redCekanja) == 0:
+                        self.agent.redCekanja.append(f'{{"putnik":"{posiljatelj}", "cijena":"{cijena}", "odredisteX":"{odredisteX}", "odredisteY":"{odredisteY}"}}')   
+                    else:                                             
+                        for i in range(0, len(redCekanja)):
+                            trenutni = json.loads(redCekanja[i])
+                            if posiljatelj != trenutni['putnik']:
+                                self.agent.redCekanja.append(f'{{"putnik":"{posiljatelj}", "cijena":"{cijena}", "odredisteX":"{odredisteX}", "odredisteY":"{odredisteY}"}}')
+                    msgCentrali = Message(
+                        to="centrala@localhost",
+                        body=json.dumps(self.agent, default=initializer.Taxi.encoder_taxi, indent=4),
+                        metadata={
+                            "intent":"taxijiUpdate"
+                        }
+                    )
+                    await self.send(msgCentrali)                                                                                  
             else:
                 print(f"{self.agent.oznaka} vise nitko ne treba. Taxi ide na godisnji.")
                 await self.agent.stop()
@@ -46,8 +52,9 @@ class Taxi(Agent):
     class VoziRedCekanja(PeriodicBehaviour):
         async def run(self):
             if len(self.agent.redCekanja) > 0:
+                prvi = json.loads(self.agent.redCekanja[0])
                 msg = Message(
-                    to=self.agent.redCekanja[0]['putnik'],
+                    to=prvi['putnik'],
                     body="prihvacam",
                     metadata={
                         "intent":"ponuda",
@@ -55,9 +62,10 @@ class Taxi(Agent):
                 )
                 await self.send(msg)
                 
-                odredisteX = self.agent.redCekanja[0]['odredisteX']
-                odredisteY = self.agent.redCekanja[0]['odredisteY']
-                cijena = self.agent.redCekanja[0]['cijena']
+                odredisteX = prvi['odredisteX']
+                odredisteY = prvi['odredisteY']
+                cijena = prvi['cijena']
+                self.agent.redCekanja.pop()
                 print(f"{self.agent.oznaka} vozi putnika na {odredisteX}-{odredisteY}" + 
                       f"za {cijena} novcanih jedinica.")
                 await asyncio.sleep(15)

@@ -6,6 +6,7 @@ import json
 import initializer
 import asyncio
 import datetime
+from ast import literal_eval
 
 class Putnik(Agent):
     class ZatraziTaxi(PeriodicBehaviour):

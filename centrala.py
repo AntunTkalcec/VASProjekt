@@ -34,10 +34,12 @@ class Centrala(Agent):
                         if taxici[i]['oznaka'] == body['oznaka']:
                             taxici[i]['redCekanja'] = body['redCekanja']
                             break
+                    test = taxici
+                    taxici = json.dumps(taxici)
                     for putnik in json.loads(self.agent.putnici):
                         msg = Message(
                             to=putnik['oznaka'],
-                            body=taxici,
+                            body=f"{taxici}",
                             metadata={
                                 "intent":"taxiji"
                             }
