@@ -37,7 +37,7 @@ class Centrala(Agent):
                     for putnik in json.loads(self.agent.putnici):
                         msg = Message(
                             to=putnik['oznaka'],
-                            body=self.agent.taxiji,
+                            body=taxici,
                             metadata={
                                 "intent":"taxiji"
                             }

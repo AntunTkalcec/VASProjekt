@@ -9,19 +9,19 @@ import datetime
 
 class Putnik(Agent):
     class ZatraziTaxi(PeriodicBehaviour):
-        async def run(self):
-            if not self.agent.zatrazioTaxi and not self.agent.nasaoTaxi:
-                print(f"{self.agent.oznaka} zatrazuje taxi.") 
-                await asyncio.sleep(2)                   
-                msg = Message(
-                    to="centrala@localhost",
-                    body="",
-                    metadata={
-                        "intent":"taxiji",
-                    }
-                )
-                await self.send(msg)
-                self.agent.zatrazioTaxi = True
+        async def run(self):          
+            print(f"{self.agent.oznaka} zatrazuje taxi.")
+            if self.agent.brojac == 1: 
+                await asyncio.sleep(2)
+                self.agent.brojac = self.agent.brojac + 1                   
+            msg = Message(
+                to="centrala@localhost",
+                body="",
+                metadata={
+                    "intent":"taxiji",
+                }
+            )
+            await self.send(msg)
                 
     class OdaberiTaxi(CyclicBehaviour):
         async def on_start(self):
@@ -52,29 +52,45 @@ class Putnik(Agent):
             return
                 
     class PonudiTaxiju(PeriodicBehaviour):
+        async def on_start(self):
+            self.najbliziTaxi = -1
+            self.udaljenosti = []
         async def run(self):
-            if (len(self.agent.udaljenosti) == 0): return
-            self.agent.vrijeme = self.agent.vrijeme/10
-            self.agent.cijena = initializer.getCijenu(min(self.agent.udaljenosti), self.agent.vrijeme)
-            if self.agent.nudimCijenu and self.agent.prihvacenaPonuda == False:
-                print(f"{self.agent.oznaka} nudi cijenu od {self.agent.cijena} taxiju {self.agent.odabranTaxi}.")
-                msg = Message(
-                    to=self.agent.odabranTaxi['oznaka'],
-                    body=f'{{"cijena":{self.agent.cijena}, "odredisteX":{self.agent.x2}, "odredisteY":{self.agent.y2}}}',
-                    metadata={
-                        "intent":"ponuda"
-                    }
-                )
-                await self.send(msg)
+            if not self.agent.nasaoTaxi:
+                print(f"{self.agent.oznaka} odabire taxi.")
+                msg = None
+                msg = await self.receive(100)
+                if msg:
+                    naredba = msg.get_metadata("intent")
+                    if naredba == "taxiji":                       
+                        taksisti = json.loads(msg.body)
+                        for el in taksisti:
+                            self.udaljenosti.append(initializer.GetUdaljenost(self.agent.x, self.agent.y, el['x'], el['y']))
+                        self.najbliziTaxi = self.udaljenosti.index(min(self.udaljenosti))
+                        odabranTaxi = taksisti[self.najbliziTaxi]
+                        self.agent.odabranTaxi = odabranTaxi                               
+                        self.agent.vrijeme = self.agent.vrijeme/10
+                        self.agent.cijena = initializer.getCijenu(min(self.udaljenosti), self.agent.vrijeme)
+                        if self.agent.prihvacenaPonuda == False:
+                            print(f"{self.agent.oznaka} nudi cijenu od {self.agent.cijena} taxiju {odabranTaxi}")
+                            msg = Message(
+                                to=odabranTaxi['oznaka'],
+                                body=f'{{"cijena":{self.agent.cijena}, "odredisteX":{self.agent.x2}, "odredisteY":{self.agent.y2}}}',
+                                metadata={
+                                    "intent":"ponuda"
+                                }
+                            )
+                            await self.send(msg)
                 
     class VoziSe(CyclicBehaviour):
         async def run(self):
             msg = None
-            msg = await self.receive(timeout=11)
+            msg = await self.receive(timeout=15)
             if msg:
                 naredba = msg.get_metadata("intent")
                 if naredba == "ponuda":
                     if msg.body == "prihvacam":
+                        self.agent.nasaoTaxi = True
                         self.agent.prihvacenaPonuda = True
                         print(f"{self.agent.oznaka} i {self.agent.odabranTaxi['oznaka']} se voze na odrediste {self.agent.x2}-{self.agent.y2}")
                         await asyncio.sleep(15)
@@ -93,6 +109,7 @@ class Putnik(Agent):
                 
     
     async def setup(self):
+        self.brojac = 1
         print(f"Stvoren je putnik {self.oznaka}, na adresi {self.x}-{self.y}, sa ciljem {self.x2}-{self.y2}, i ima {self.vrijeme} vremenskih jedinica da stigne!")
         zatraziPonasanje = self.ZatraziTaxi(period=5)
         odaberiPonasanje = self.OdaberiTaxi()
@@ -100,7 +117,7 @@ class Putnik(Agent):
         ponudiPonasanje = self.PonudiTaxiju(period=10, start_at=start_at)
         voziPonasanje = self.VoziSe()
         self.add_behaviour(zatraziPonasanje)
-        self.add_behaviour(odaberiPonasanje)
+        # self.add_behaviour(odaberiPonasanje)
         self.add_behaviour(ponudiPonasanje)
         self.add_behaviour(voziPonasanje)
         

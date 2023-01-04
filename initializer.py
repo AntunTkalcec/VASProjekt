@@ -52,7 +52,7 @@ def initPutnici():
     Centrala.putnici = putnici
     
 def GetUdaljenost(x1, y1, x2, y2):
-    return math.sqrt( math.pow( (x1 - y1), 2) + math.pow( (x2 - y2), 2) )
+    return math.sqrt( math.pow( (x2 - x1), 2) + math.pow( (y2 - y1), 2) )
 
 def getCijenu(udaljenost, preostaloVrijeme):
     return udaljenost * (3601 - preostaloVrijeme)

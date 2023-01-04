@@ -20,20 +20,13 @@ class Taxi(Agent):
             if msg:
                 naredba = msg.get_metadata("intent")
                 if naredba == "ponuda":
-                    bodyDict = json.loads(msg.body)
-                    cijena = bodyDict['cijena']
-                    odredisteX = bodyDict['odredisteX']
-                    odredisteY = bodyDict['odredisteY']
-                    if self.agent.slobodan == True and len(self.agent.redCekanja) == 0:
-                        self.agent.slobodan = False
-                        msg = msg.make_reply()
-                        msg.body = "prihvacam"
-                        await self.send(msg)
-                        print(f"{self.agent.oznaka} vozi putnika na {odredisteX}-{odredisteY} za {cijena} novcanih jedinica.")
-                        await asyncio.sleep(15)
-                        self.agent.x = odredisteX
-                        self.agent.y = odredisteY
-                    elif self.agent.slobodan == False:
+                    body = dict(msg.body)
+                    cijena = body['cijena']
+                    odredisteX = body['odredisteX']
+                    odredisteY = body['odredisteY']
+                    posiljatelj = msg.sender[0] + "@" + msg.sender[1]
+                    redCekanja = self.agent.redCekanja
+                    if posiljatelj not in redCekanja:
                         self.agent.redCekanja.append(f"{{'putnik':{msg.sender}, 'cijena':{cijena}, 'odredisteX':{odredisteX}, 'odredisteY':{odredisteY}}}")
                         msgCentrali = Message(
                             to="centrala@localhost",
@@ -42,8 +35,7 @@ class Taxi(Agent):
                                 "intent":"taxijiUpdate"
                             }
                         )
-                        await self.send(msgCentrali) 
-                                           
+                        await self.send(msgCentrali)                                                                                   
             else:
                 print(f"{self.agent.oznaka} vise nitko ne treba. Taxi ide na godisnji.")
                 await self.agent.stop()
@@ -53,32 +45,29 @@ class Taxi(Agent):
         
     class VoziRedCekanja(PeriodicBehaviour):
         async def run(self):
-            if len(self.agent.redCekanja) > 0 and self.agent.slobodan == True:
-                self.agent.slobodan = False
-                test = self.agent.redCekanja
-                testSorted = sorted(test, reverse=True, key=lambda element: element[1])
-                return
-                test2 = test.items()
-                redCekanja = sorted(redCekanja.items(), key=lambda x:x[1], reverse=True)
-                redCekanjaDict = dict(redCekanja)
+            if len(self.agent.redCekanja) > 0:
                 msg = Message(
-                    to=redCekanjaDict[0]['putnik'],
+                    to=self.agent.redCekanja[0]['putnik'],
                     body="prihvacam",
                     metadata={
-                    "intent":"ponuda"
+                        "intent":"ponuda",
                     }
                 )
                 await self.send(msg)
-                print(f"{self.agent.oznaka} je opet slobodan i vozi putnika na {redCekanjaDict[0]['odredisteX']}-{redCekanjaDict[0]['odredisteY']} za " +
-                    f"{redCekanjaDict[0]['cijena']} novcanih jedinica")
+                
+                odredisteX = self.agent.redCekanja[0]['odredisteX']
+                odredisteY = self.agent.redCekanja[0]['odredisteY']
+                cijena = self.agent.redCekanja[0]['cijena']
+                print(f"{self.agent.oznaka} vozi putnika na {odredisteX}-{odredisteY}" + 
+                      f"za {cijena} novcanih jedinica.")
                 await asyncio.sleep(15)
-                self.agent.x = redCekanjaDict[0]['odredisteX']
-                self.agent.y = redCekanjaDict[0]['odredisteY']
+                self.agent.x = odredisteX
+                self.agent.y = odredisteY            
     
     async def setup(self):
         primajPonasanje = self.PrimajPonude()
         self.add_behaviour(primajPonasanje)
-        voziRedCekanjaPonasanje = self.VoziRedCekanja(period=5, start_at=datetime.datetime.now() + datetime.timedelta(seconds=10))
+        voziRedCekanjaPonasanje = self.VoziRedCekanja(period=5, start_at=datetime.datetime.now() + datetime.timedelta(seconds=5))
         self.add_behaviour(voziRedCekanjaPonasanje)
         print(f"Pokreće se {self.oznaka}")
         
