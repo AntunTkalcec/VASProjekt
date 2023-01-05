@@ -1,19 +1,17 @@
-import spade
 from spade.agent import Agent
-from spade.behaviour import OneShotBehaviour, CyclicBehaviour, PeriodicBehaviour
+from spade.behaviour import CyclicBehaviour, PeriodicBehaviour
 from spade.message import Message
 import json
 import initializer
 import asyncio
 import datetime
-from ast import literal_eval
+from time import sleep
 
 class Putnik(Agent):
     class ZatraziTaxi(PeriodicBehaviour):
         async def run(self):          
-            print(f"{self.agent.oznaka} zatrazuje taxi.")
             if self.agent.brojac == 1: 
-                await asyncio.sleep(2)
+                sleep(1)
                 self.agent.brojac = self.agent.brojac + 1                   
             msg = Message(
                 to="centrala@localhost",
@@ -24,41 +22,12 @@ class Putnik(Agent):
             )
             await self.send(msg)
                 
-    class OdaberiTaxi(CyclicBehaviour):
-        async def on_start(self):
-            self.odabirem = False
-        async def run(self):
-            if self.agent.zatrazioTaxi and not self.agent.nasaoTaxi and not self.odabirem == True:
-                print(f"{self.agent.oznaka} odabire taxi.")
-                self.odabirem = True
-                msg = None
-                msg = await self.receive(timeout=100)
-                if msg:
-                    naredba = msg.get_metadata("intent")
-                    if naredba == "taxiji":
-                        taksisti = json.loads(msg.body)                                                      
-                        self.OdaberiTaksista(taksisti)
-                        
-        def OdaberiTaksista(self, t):
-            udaljenosti = []
-            for el in t:
-                udaljenosti.append(initializer.GetUdaljenost(self.agent.x, self.agent.y, el['x'], el['y']))
-            najbliziTaxi = udaljenosti.index(min(udaljenosti))
-            print(f"Putnik {self.agent.oznaka} ima sljedece udaljenosti: {udaljenosti}")
-            self.agent.odabranTaxi = t[najbliziTaxi]
-            self.agent.udaljenosti = udaljenosti            
-            self.agent.nudimCijenu = True
-            print(f"{self.agent.oznaka} salje zahtjev za prijevoz najblizem taxiju {self.agent.odabranTaxi['oznaka']}.")
-
-            return
-                
     class PonudiTaxiju(PeriodicBehaviour):
         async def on_start(self):
             self.najbliziTaxi = -1
             self.udaljenosti = []
         async def run(self):
             if not self.agent.nasaoTaxi:
-                print(f"{self.agent.oznaka} odabire taxi.")
                 msg = None
                 msg = await self.receive(100)
                 if msg:
@@ -73,7 +42,7 @@ class Putnik(Agent):
                         self.agent.vrijeme = self.agent.vrijeme/10
                         self.agent.cijena = initializer.getCijenu(min(self.udaljenosti), self.agent.vrijeme)
                         if self.agent.prihvacenaPonuda == False:
-                            print(f"{self.agent.oznaka} nudi cijenu od {self.agent.cijena} taxiju {odabranTaxi}")
+                            print(f"{self.agent.oznaka} nudi cijenu od {self.agent.cijena} taxiju {odabranTaxi['oznaka']}")
                             msg = Message(
                                 to=odabranTaxi['oznaka'],
                                 body=f'{{"cijena":{self.agent.cijena}, "odredisteX":{self.agent.x2}, "odredisteY":{self.agent.y2}}}',
@@ -113,12 +82,10 @@ class Putnik(Agent):
         self.brojac = 1
         print(f"Stvoren je putnik {self.oznaka}, na adresi {self.x}-{self.y}, sa ciljem {self.x2}-{self.y2}, i ima {self.vrijeme} vremenskih jedinica da stigne!")
         zatraziPonasanje = self.ZatraziTaxi(period=5)
-        odaberiPonasanje = self.OdaberiTaxi()
         start_at = datetime.datetime.now() + datetime.timedelta(seconds=5)
         ponudiPonasanje = self.PonudiTaxiju(period=10, start_at=start_at)
         voziPonasanje = self.VoziSe()
         self.add_behaviour(zatraziPonasanje)
-        # self.add_behaviour(odaberiPonasanje)
         self.add_behaviour(ponudiPonasanje)
         self.add_behaviour(voziPonasanje)
         

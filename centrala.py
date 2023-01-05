@@ -1,10 +1,7 @@
-import spade
 from spade.agent import Agent
-from spade.behaviour import OneShotBehaviour, CyclicBehaviour
+from spade.behaviour import CyclicBehaviour
 import json
-import asyncio
 import initializer
-from spade.message import Message
 from ast import literal_eval
 
 class Centrala(Agent):
@@ -27,6 +24,16 @@ class Centrala(Agent):
                             self.agent.putnici.pop(i)
                             break
                     self.agent.putnici = json.dumps(self.agent.putnici)
+                elif naredba == 'taxiRemove':
+                    self.agent.taxiji = json.loads(self.agent.taxiji)
+                    for i in range(len(self.agent.taxiji)):
+                        if str(self.agent.taxiji[i]['oznaka']) == msg.body:
+                            self.agent.taxiji.pop(i)
+                            break
+                    if len(self.agent.taxiji) == 0:
+                        print("Vise nema taksija. Sustav je gotov!")
+                        await self.agent.stop()
+                    self.agent.taxiji = json.dumps(self.agent.taxiji)
                 elif naredba == 'taxijiUpdate':                    
                     body = json.loads(msg.body)
                     taxici = json.loads(self.agent.taxiji)                                      
@@ -34,17 +41,8 @@ class Centrala(Agent):
                         if taxici[i]['oznaka'] == body['oznaka']:
                             taxici[i]['redCekanja'] = body['redCekanja']
                             break
-                    test = taxici
                     taxici = json.dumps(taxici)
-                    for putnik in json.loads(self.agent.putnici):
-                        msg = Message(
-                            to=putnik['oznaka'],
-                            body=f"{taxici}",
-                            metadata={
-                                "intent":"taxiji"
-                            }
-                        )
-                        await self.send(msg)
+                    self.agent.taxiji = taxici
                     return
             await self.send(msg)            
     

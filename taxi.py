@@ -1,23 +1,16 @@
-import spade
 from spade.agent import Agent
-import random
 from spade.message import Message
-from spade.template import Template
-from spade import quit_spade
 import asyncio
 from spade.behaviour import CyclicBehaviour, PeriodicBehaviour
-
-from time import sleep
 import json
 import initializer
 import datetime
-from ast import literal_eval
 
 class Taxi(Agent):
     class PrimajPonude(CyclicBehaviour):
         async def run(self):
             msg = None
-            msg = await self.receive(timeout=20)
+            msg = await self.receive(timeout=30)
             if msg:
                 naredba = msg.get_metadata("intent")
                 if naredba == "ponuda":
@@ -29,11 +22,15 @@ class Taxi(Agent):
                     redCekanja = json.loads(json.dumps(self.agent.redCekanja))
                     if len(redCekanja) == 0:
                         self.agent.redCekanja.append(f'{{"putnik":"{posiljatelj}", "cijena":"{cijena}", "odredisteX":"{odredisteX}", "odredisteY":"{odredisteY}"}}')   
-                    else:                                             
+                    else:
+                        vecPostoji = False                                             
                         for i in range(0, len(redCekanja)):
                             trenutni = json.loads(redCekanja[i])
-                            if posiljatelj != trenutni['putnik']:
-                                self.agent.redCekanja.append(f'{{"putnik":"{posiljatelj}", "cijena":"{cijena}", "odredisteX":"{odredisteX}", "odredisteY":"{odredisteY}"}}')
+                            trenutniPutnik = trenutni['putnik']
+                            if posiljatelj == trenutniPutnik:
+                                vecPostoji = True
+                        if not vecPostoji:
+                            self.agent.redCekanja.append(f'{{"putnik":"{posiljatelj}", "cijena":"{cijena}", "odredisteX":"{odredisteX}", "odredisteY":"{odredisteY}"}}')
                     msgCentrali = Message(
                         to="centrala@localhost",
                         body=json.dumps(self.agent, default=initializer.Taxi.encoder_taxi, indent=4),
@@ -42,8 +39,16 @@ class Taxi(Agent):
                         }
                     )
                     await self.send(msgCentrali)                                                                                  
-            else:
+            elif not self.agent.vozim:
+                msgCentrali = Message(
+                    to="centrala@localhost",
+                    body=f"{self.agent.oznaka}",
+                    metadata={
+                        "intent":"taxiRemove"
+                    }
+                )                
                 print(f"{self.agent.oznaka} vise nitko ne treba. Taxi ide na godisnji.")
+                await self.send(msgCentrali)
                 await self.agent.stop()
 
         def get_cijena(element):
@@ -61,18 +66,20 @@ class Taxi(Agent):
                     }
                 )
                 await self.send(msg)
-                
+                self.agent.vozim = True
                 odredisteX = prvi['odredisteX']
                 odredisteY = prvi['odredisteY']
                 cijena = prvi['cijena']
-                self.agent.redCekanja.pop()
-                print(f"{self.agent.oznaka} vozi putnika na {odredisteX}-{odredisteY}" + 
-                      f"za {cijena} novcanih jedinica.")
+                self.agent.redCekanja.pop(0)
+                print(f"{self.agent.oznaka} vozi {prvi['putnik']} na {odredisteX}-{odredisteY}" + 
+                      f" za {cijena} novcanih jedinica.")
                 await asyncio.sleep(15)
                 self.agent.x = odredisteX
-                self.agent.y = odredisteY            
+                self.agent.y = odredisteY
+                self.agent.vozim = False            
     
     async def setup(self):
+        self.vozim = False
         primajPonasanje = self.PrimajPonude()
         self.add_behaviour(primajPonasanje)
         voziRedCekanjaPonasanje = self.VoziRedCekanja(period=5, start_at=datetime.datetime.now() + datetime.timedelta(seconds=5))

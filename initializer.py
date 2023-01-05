@@ -1,10 +1,4 @@
-from spade.agent import Agent
 import random
-from spade.message import Message
-from spade.template import Template
-from spade import quit_spade
-
-from time import sleep
 from taxi import Taxi
 from putnik import Putnik
 from centrala import Centrala
@@ -28,10 +22,9 @@ def initTaxi():
     Centrala.taxiji = taxiji
     
 def initPutnici():
-    num = random.randrange(1, 15)
-    print(num)
+    num = random.randrange(3, 10)
     putnici = []
-    for i in range(1, 11):
+    for i in range(1, num+1):
         putnik = Putnik(f"putnik{i}@localhost", f"putnik{i}")
         putnik.oznaka = f"putnik{i}@localhost"
         putnik.x = random.randrange(1, random.randrange(2, 60))

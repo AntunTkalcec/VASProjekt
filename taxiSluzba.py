@@ -1,11 +1,6 @@
-from spade.agent import Agent
-from spade.message import Message
-from spade.template import Template
 from spade import quit_spade
-
 from time import sleep
 import initializer
-import asyncio
 
 if __name__ == '__main__':  
     centrala = initializer.Centrala(f"centrala@localhost", f"centrala")
