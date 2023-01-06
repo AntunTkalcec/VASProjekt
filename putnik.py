@@ -91,5 +91,5 @@ class Putnik(Agent):
         
     def encoder_putnik(self):
         return {'oznaka': self.oznaka, 'x': self.x, 'y': self.y, 'x2': self.x2, 'y2': self.y2,
-                'vrijeme': self.vrijeme, 'zatrazioTaxi': self.zatrazioTaxi, 'nasaoTaxi': self.nasaoTaxi, 'odabranTaxi': self.odabranTaxi,
-                'nudimCijenu': self.nudimCijenu, 'cijena': self.cijena, 'prihvacenaPonuda': self.prihvacenaPonuda, 'udaljenosti': self.udaljenosti}
+                'vrijeme': self.vrijeme, 'nasaoTaxi': self.nasaoTaxi, 'odabranTaxi': self.odabranTaxi,
+                'cijena': self.cijena, 'prihvacenaPonuda': self.prihvacenaPonuda, 'udaljenosti': self.udaljenosti}

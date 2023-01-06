@@ -4,9 +4,6 @@ from putnik import Putnik
 from centrala import Centrala
 import math
 
-def initCentrala():
-    return Centrala(f"centrala@localhost", f"centrala")
-
 def initTaxi():
     taxiji = []
     for i in range(1, 4):
@@ -15,7 +12,6 @@ def initTaxi():
         taxi.x = random.randrange(1, 60)
         taxi.y = random.randrange(1, 60)
         taxi.redCekanja = []
-        taxi.slobodan = True
         taxiji.insert(i, taxi)
         taxi.start()
     
@@ -32,10 +28,8 @@ def initPutnici():
         putnik.x2 = random.randrange(1, random.randrange(2, 60))
         putnik.y2 = random.randrange(1, random.randrange(2, 60))
         putnik.vrijeme = random.randrange(600, 3600)
-        putnik.zatrazioTaxi = False
         putnik.nasaoTaxi = False
         putnik.odabranTaxi = {}
-        putnik.nudimCijenu = False
         putnik.cijena = 0
         putnik.prihvacenaPonuda = False
         putnik.udaljenosti = []

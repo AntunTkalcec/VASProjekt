@@ -87,4 +87,4 @@ class Taxi(Agent):
         print(f"Pokreće se {self.oznaka}")
         
     def encoder_taxi(self):
-        return {'oznaka': self.oznaka, 'x': self.x, 'y': self.y, 'slobodan': self.slobodan, 'redCekanja': self.redCekanja}
+        return {'oznaka': self.oznaka, 'x': self.x, 'y': self.y, 'redCekanja': self.redCekanja}
