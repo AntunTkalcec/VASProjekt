@@ -23,13 +23,24 @@ class Taxi(Agent):
                     if len(redCekanja) == 0:
                         self.agent.redCekanja.append(f'{{"putnik":"{posiljatelj}", "cijena":"{cijena}", "odredisteX":"{odredisteX}", "odredisteY":"{odredisteY}"}}')   
                     else:
-                        vecPostoji = False                                             
+                        vecPostoji = False
+                        vecaCijena = False
+                        putnikZaZamjenu = ""                                            
                         for i in range(0, len(redCekanja)):
                             trenutni = json.loads(redCekanja[i])
                             trenutniPutnik = trenutni['putnik']
                             if posiljatelj == trenutniPutnik:
                                 vecPostoji = True
+                                if float(cijena) > float(trenutni['cijena']):
+                                    vecaCijena = True
+                                    putnikZaZamjenu = trenutniPutnik
                         if not vecPostoji:
+                            self.agent.redCekanja.append(f'{{"putnik":"{posiljatelj}", "cijena":"{cijena}", "odredisteX":"{odredisteX}", "odredisteY":"{odredisteY}"}}')
+                        if vecPostoji and vecaCijena:
+                            for i in range(0, len(self.agent.redCekanja)):
+                                p = json.loads(redCekanja[i])
+                                if putnikZaZamjenu == p['putnik']:
+                                    self.agent.redCekanja.pop(i)
                             self.agent.redCekanja.append(f'{{"putnik":"{posiljatelj}", "cijena":"{cijena}", "odredisteX":"{odredisteX}", "odredisteY":"{odredisteY}"}}')
                     msgCentrali = Message(
                         to="centrala@localhost",
@@ -50,13 +61,11 @@ class Taxi(Agent):
                 print(f"{self.agent.oznaka} vise nitko ne treba. Taxi ide na godisnji.")
                 await self.send(msgCentrali)
                 await self.agent.stop()
-
-        def get_cijena(element):
-            return element['cijena']
         
     class VoziRedCekanja(PeriodicBehaviour):
         async def run(self):
             if len(self.agent.redCekanja) > 0:
+                self.agent.redCekanja.sort(key=self.get_cijena, reverse=True)
                 prvi = json.loads(self.agent.redCekanja[0])
                 msg = Message(
                     to=prvi['putnik'],
@@ -76,7 +85,11 @@ class Taxi(Agent):
                 await asyncio.sleep(15)
                 self.agent.x = odredisteX
                 self.agent.y = odredisteY
-                self.agent.vozim = False            
+                self.agent.vozim = False
+                
+        def get_cijena(self, element):
+            el = json.loads(element)
+            return float(el['cijena'])
     
     async def setup(self):
         self.vozim = False
